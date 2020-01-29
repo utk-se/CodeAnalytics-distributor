@@ -21,7 +21,7 @@ def main():
 
     args = parser.parse_args()
 
-    log.info("Main start.")
+    log.info("Main start: " + __name__)
 
     log.info("Starting Flash main loop.")
 
