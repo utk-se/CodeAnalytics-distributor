@@ -9,9 +9,9 @@ def main():
     )
 
     parser.add_argument(
-        "-p", "--port",
-        type=int,
-        help="Port to listen on"
+        "-c", "--config",
+        type=str,
+        help="Config file"
     )
     parser.add_argument(
         "-v", "--verbose",
