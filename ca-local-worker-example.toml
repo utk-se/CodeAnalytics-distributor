@@ -1,0 +1,8 @@
+
+[api]
+https = true
+port = 443
+host = "localhost"
+
+[analysis]
+tempdir = "./workdir/ca-worker-%s"

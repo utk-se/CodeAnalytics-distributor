@@ -1,0 +1,9 @@
+
+[database]
+host = "localhost"
+port = 27017
+
+[api]
+https = false
+port = 5000
+sessionkey = "nLjMpggF6NCKDMWdChBYHFHrAlSeme"

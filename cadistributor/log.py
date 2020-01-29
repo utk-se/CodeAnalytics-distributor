@@ -7,11 +7,14 @@ import inspect
 import logging
 import coloredlogs
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 coloredlogs.install(
-    fmt="[%(asctime)s] [%(levelname)8s] [%(module)s %(funcName)s] %(message)s"
+    fmt="[%(asctime)s] [%(levelname)8s] [%(module)s %(funcName)s] %(message)s",
+    logger=logger,
+    level=logging.DEBUG
 )
+logger.setLevel(logging.INFO)
 
 class bcolors:
     """Colors for general use. Done using terminal escape sequences."""
@@ -175,6 +178,7 @@ warn = warning = logger.warn
 setLevel = logger.setLevel
 DEBUG = logging.DEBUG
 INFO = logging.INFO
+WARN = logging.WARNING
 
 # Multi-line debugging output
 def trace(f, message: str):
@@ -190,9 +194,9 @@ if __name__ == "__main__":
 
     logger.setLevel(logging.INFO)
 
-    logger.debug("Unseen debug message.")
     with verbose_logger():
-        logger.debug("Debug " + bcolors.BLUE + "info" + bcolors.ENDC)
+        logger.debug("Debug info in verbose_logger")
+    logger.debug("Unseen debug message.")
     logger.info("Info info, with info")
     logger.warning("Warning info")
     logger.error("Error info")
