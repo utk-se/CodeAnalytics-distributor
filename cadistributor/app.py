@@ -22,7 +22,7 @@ def get_next_job():
 def list_jobs():
     return 'Not implemented'
 
-@app.route('/jobs/add', methods=['PUT'])
+@app.route('/jobs/add', methods=['POST'])
 def add_job():
     return 'Not implemented'
 
@@ -43,4 +43,9 @@ def write_job_data(jobid):
 @app.route('/jobs/<jobid>', methods=['PATCH'])
 def update_job(jobid):
     '''Modifies the job object'''
+    return 'Not implemented'
+
+@app.route('/jobs/<jobid>', methods=['DELETE'])
+def delete_job(jobid):
+    '''Yep.'''
     return 'Not implemented'
