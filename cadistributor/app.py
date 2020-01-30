@@ -36,12 +36,20 @@ def get_client_token(clientid):
 
 @app.route('/')
 def index():
-    return 'No.'
+    return 'Hi.'
+
+### /status/
 
 @app.route('/status', methods=['GET'])
 def statuspage():
     '''Frontend for seeing activity of the requesters'''
-    return 'Doing nothing.'
+    return 'Seems ok from here.'
+
+@app.route('/status/worker/<workerid>', methods=['GET'])
+def get_worker_status(workerid):
+    return 'Probably doing work.'
+
+### /jobs/
 
 @app.route('/jobs/next', methods=['GET'])
 @auth.login_required
