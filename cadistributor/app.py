@@ -1,7 +1,7 @@
 
 import secrets
 import flask
-from . import log
+from . import log, jobs
 from flask import request
 from flask_httpauth import HTTPDigestAuth
 
@@ -68,7 +68,13 @@ def remove_job():
 @auth.login_required
 def get_job(jobid):
     '''Return the full job object'''
-    return 'Not implemented'
+    result = jobs.get_job_by_id(jobid)
+    if type(result) is int:
+        return "No such job: " + jobid, result
+    elif result is None:
+        return "Could not find that job.", 404
+    elif result:
+        return result, 200
 
 @app.route('/jobs/<jobid>', methods=['PUT'])
 @auth.login_required
