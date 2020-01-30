@@ -20,7 +20,7 @@ jobtemplate = {
 dbclient = MongoClient()
 db = dbclient.get_database(name='ca-core')
 jobcollection = db.get_collection('jobs')
-clientcollection = db.get_collection('clients')
+workercollection = db.get_collection('workers')
 
 def get_job_by_id(objectid):
     try:
