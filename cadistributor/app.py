@@ -52,9 +52,7 @@ def get_worker_status(workerid):
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
 def update_worker_status(workerid):
-    return {
-        "you": "are not really working"
-    }
+    return { "you": "are not really working" }, 200
 
 ### /jobs/
 
