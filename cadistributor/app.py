@@ -36,7 +36,7 @@ def get_client_token(clientid):
 
 @app.route('/')
 def index():
-    return 'Hi.'
+    return 'Hi. If you don\'t know what this is, you probably shouldn\'t be here.'
 
 ### /status/
 
