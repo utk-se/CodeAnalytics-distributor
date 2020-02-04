@@ -32,7 +32,7 @@ except Exception as e:
 @auth.get_password
 def get_client_token(clientid):
     # TODO get token from db
-    return 'FM2oSiwS'
+    return 'replaceme'
 
 @app.route('/')
 def index():
