@@ -47,7 +47,8 @@ def statuspage():
 
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
-    return 'Probably doing work.'
+    # TODO
+    return {"status": 'Probably doing work.'}
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required

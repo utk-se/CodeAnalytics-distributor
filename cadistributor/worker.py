@@ -13,6 +13,15 @@ def ping_master():
     log.debug(r)
     log.debug(r.content)
 
+def get_worker_status():
+    r = requests.get(
+        config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
+    )
+    if r.ok:
+        return r.json()
+    elif r.status_code == requests.codes.unauthorized:
+        raise ConnectionRefusedError("unauthorized")
+
 def checkin(state: str = "nothing", extra_status_data: dict = {}):
     now = datetime.datetime.now(datetime.timezone.utc)
     newdata={
@@ -54,7 +63,7 @@ def claim_job(job):
 
 def run_job(job):
     checkin(
-        "running job",
+        "running",
         {"jobid": job._id}
     )
 
@@ -70,8 +79,8 @@ def run_job(job):
     # TODO run analysis_program <jobdir>
 
     # TODO fetch and return json from result_file
-    #
-    checkin("finished job")
+
+    checkin("finished")
 
 
 def __main__():
@@ -109,8 +118,21 @@ def __main__():
     ping_master()
 
     log.info("Checking in...")
-    checkin()
+    checkin("bootup")
+
+
+def main_loop():
+    # TODO check if previous job was finished,
+    # if not: get that job and run it
+
+    while True:
+        log.debug("main_loop")
 
 
 if __name__ == "__main__":
-    __main__()
+    # TODO catch
+    try:
+        __main__()
+    except KeyboardInterrupt as e:
+        log.warn("Stopping from SIGINT...")
+        checkin("stopped")
