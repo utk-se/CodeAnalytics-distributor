@@ -53,6 +53,8 @@ def get_worker_status(workerid):
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
 def update_worker_status(workerid):
+    if auth.username() != workerid:
+        return 'Not allowed.', 401
     return { "you": "are not really working" }, 200
 
 ### /jobs/
