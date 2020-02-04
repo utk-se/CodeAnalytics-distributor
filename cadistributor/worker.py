@@ -41,5 +41,21 @@ def __main__():
     log.info("Pinging API...")
     ping_master()
 
+def do_analysis(job):
+    pass
+
+    # TODO make dirs:
+    # tempdir
+    # jobdir
+
+    # TODO clone repo inside tempdir
+    # into jobdirpattern
+
+    # TODO cd into tempdir,
+
+    # TODO run analysis_program <jobdir>
+
+    # TODO fetch and return json from result_file
+
 if __name__ == "__main__":
     __main__()
