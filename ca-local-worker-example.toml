@@ -1,8 +1,6 @@
 
 [api]
-https = true
-port = 443
-host = "localhost"
+baseuri = "https://ca-core.unhexium.dev"
 
 [analysis]
 tempdir = "./workdir/ca-worker-%s"

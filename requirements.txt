@@ -4,3 +4,4 @@ pymongo
 toml
 Flask-HTTPAuth
 gunicorn
+requests
