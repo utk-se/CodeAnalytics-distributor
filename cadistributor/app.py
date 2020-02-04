@@ -49,6 +49,13 @@ def statuspage():
 def get_worker_status(workerid):
     return 'Probably doing work.'
 
+@app.route('/status/worker/<workerid>', methods=['PUT'])
+@auth.login_required
+def update_worker_status(workerid):
+    return {
+        "you": "are not really working"
+    }
+
 ### /jobs/
 
 @app.route('/jobs/next', methods=['GET'])

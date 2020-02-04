@@ -1,5 +1,5 @@
 
-import argparse
+import argparse, datetime
 import requests, toml
 from . import log
 
@@ -8,6 +8,18 @@ config = {}
 def ping_master():
     r = requests.get(
         config["api"]["baseuri"] + "/status"
+    )
+    log.debug(r)
+
+def checkin():
+    now = datetime.datetime.now(datetime.timezone.utc)
+    r = requests.put(
+        config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
+        data={
+            "lastcheckin": now.isoformat(),
+            "lastcheckin_human": now.strftime('%F %T %z')
+        },
+        auth=(config["api"]["workername"], config["api"]["token"]),
     )
     log.debug(r)
 
@@ -40,6 +52,9 @@ def __main__():
 
     log.info("Pinging API...")
     ping_master()
+
+    log.info("Checking in...")
+    checkin()
 
 def do_analysis(job):
     pass
