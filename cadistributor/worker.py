@@ -179,3 +179,12 @@ if __name__ == "__main__":
     except KeyboardInterrupt as e:
         log.warn("Stopping from SIGINT...")
         checkin("stopped")
+    except Exception as e:
+        log.err(f"Unknown exception: {e}")
+        checkin("error",{
+            "error": {
+                "type": str(type(e)),
+                "str": str(e)
+            }
+        })
+        raise e
