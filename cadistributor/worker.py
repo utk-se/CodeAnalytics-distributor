@@ -1,5 +1,5 @@
 
-import argparse, datetime, json
+import argparse, datetime, json, os
 import requests, toml
 from requests.auth import HTTPBasicAuth
 from . import log
@@ -21,18 +21,23 @@ def get_worker_state():
         return r.json()
     elif r.status_code == requests.codes.unauthorized:
         raise ConnectionRefusedError("unauthorized")
+    else:
+        log.error(f"Unknown response: {r.status_code}")
+        raise RuntimeError(f"Unknown response: {r.status_code}")
 
 def checkin(status: str = "nothing", state: dict = {}):
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.utcnow()
+    data = get_worker_state()
     newdata={
         "status": status,
         "lastcheckin": now.isoformat(),
         "lastcheckin_human": now.strftime('%F %T %z')
     }
     newdata.update(state)
+    data.update(newdata)
     r = requests.put(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
-        json=newdata,
+        json=data,
         auth=config["auth"]
     )
     if r.status_code == requests.codes.unauthorized:
@@ -64,25 +69,46 @@ def claim_job(job):
     )
 
 def run_job(job):
-    checkin(
-        "running",
-        {"jobid": job._id}
-    )
+    checkin("setup", {
+        "job": {
+            "_id": job["_id"],
+            "url": job["url"]
+        }
+    })
 
-    # TODO make dirs:
-    # tempdir
-    # jobdir
+    # make all dirs:
+    workdir = config["job"]["workdir"] % config["api"]["workername"]
+    os.makedirs(workdir, mode=0o750, exist_ok=True)
+    os.chdir(workdir)
+    repodir = config["job"]["repodir"] % job["_id"]
+    os.makedirs(repodir)
+
+    checkin("clone", {
+        "job": {
+            "_id": job["_id"],
+            "url": job["url"],
+            "workdir": workdir,
+            "repodir": repodir
+        }
+    })
 
     # TODO clone repo inside tempdir
-    # into jobdirpattern
+    # into repodir
 
-    # TODO cd into tempdir,
+    checkin("analyze", {
+        "job": {
+            "_id": job["_id"],
+            "url": job["url"],
+            "workdir": workdir,
+            "repodir": repodir
+        }
+    })
 
     # TODO run analysis_program <jobdir>
 
     # TODO fetch and return json from result_file
 
-    checkin("finished")
+    checkin("completed")
 
 
 def __main__():
@@ -107,11 +133,13 @@ def __main__():
     config.update(toml.load(args.config))
     try:
         assert config["api"]["baseuri"] is not None
-        assert config["analysis"]["tempdir"] is not None
+        assert config["job"]["workdir"] is not None
         config["auth"] = HTTPBasicAuth(
             config["api"]["workername"],
             config["api"]["token"]
         )
+        if not config["job"].get("repodir"):
+            config["job"]["repodir"] = "job-%s"
     except AssertionError as e:
         log.error("Config check failed:")
         log.error(e)
@@ -122,7 +150,9 @@ def __main__():
     log.info("Worker: " + config["api"]["workername"])
 
     log.info("Checking in...")
-    checkin("bootup")
+    checkin("bootup", {
+        "endpoint": config["api"]["baseuri"]
+    })
 
 
 def main_loop():
@@ -137,6 +167,7 @@ if __name__ == "__main__":
     # TODO catch
     try:
         __main__()
+        checkin("exited")
     except KeyboardInterrupt as e:
         log.warn("Stopping from SIGINT...")
         checkin("stopped")
