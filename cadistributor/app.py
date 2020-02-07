@@ -58,7 +58,7 @@ def add_header(r):
 
 @app.route('/githook', methods=['POST'])
 def git_pull():
-    data = request.get_json(Force=True)
+    data = request.get_json(force=True)
     log.info(f"githook: {data}")
     # verify secret token
     # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
