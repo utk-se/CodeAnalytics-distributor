@@ -62,6 +62,8 @@ def git_pull():
     log.info(f"githook: {data}")
     # verify secret token
     # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
+    #
+    return {"action": "none"}, 200
 
 ### /status/
 
