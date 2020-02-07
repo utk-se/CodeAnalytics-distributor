@@ -1,5 +1,6 @@
 
 import secrets
+import subprocess
 import flask
 from . import log, jobs
 from bson.json_util import loads, dumps
@@ -59,11 +60,20 @@ def add_header(r):
 @app.route('/githook', methods=['POST'])
 def git_pull():
     data = request.get_json(force=True)
-    log.info(f"githook: {data}")
-    log.info(f"headers: {request.headers}")
+    log.info(f"githook on {data['ref']}")
+    # log.info(f"headers: {request.headers}")
     # verify secret token
     # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
-    #
+    # lol nevermind, idk how to parse it
+    if data["pusher"]["name"] == "robobenklein":
+        proc = subprocess.run(["git", "pull"], text=True)
+        if proc.returncode != 0:
+            log.warn("git pull failed:")
+            for line in proc.stdout.split('\n'):
+                log.warn(line)
+        else:
+            log.info("git pull success")
+            return {"action": "pulled"}, 200
     return {"action": "none"}, 200
 
 ### /status/
