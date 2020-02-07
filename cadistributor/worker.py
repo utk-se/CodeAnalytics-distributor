@@ -1,5 +1,5 @@
 
-import argparse, datetime, json, os
+import argparse, datetime, json, os, time
 import requests, toml
 from requests.auth import HTTPBasicAuth
 from . import log
@@ -65,7 +65,10 @@ def claim_job(job):
         raise RuntimeError("Job Claim Fail")
     checkin(
         "claimed job",
-        {"jobid": job._id}
+        {"job": {
+            "_id": job["_id"],
+            "url": job["url"]
+        }}
     )
 
 def run_job(job):
@@ -154,6 +157,10 @@ def __main__():
         "endpoint": config["api"]["baseuri"]
     })
 
+    main_loop()
+
+    checkin("exited")
+
 
 def main_loop():
     # TODO check if previous job was finished,
@@ -161,13 +168,14 @@ def main_loop():
 
     while True:
         log.debug("main_loop")
+        checkin("sleeping")
+        time.sleep(5)
 
 
 if __name__ == "__main__":
     # TODO catch
     try:
         __main__()
-        checkin("exited")
     except KeyboardInterrupt as e:
         log.warn("Stopping from SIGINT...")
         checkin("stopped")
