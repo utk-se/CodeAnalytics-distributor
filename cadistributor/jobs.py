@@ -58,7 +58,7 @@ def update_worker_state(workername, state):
         }}, return_document=pymongo.ReturnDocument.AFTER)
         if worker is None:
             return 404
-        return worker["state"]
+        return dumps(worker["state"])
     except Exception as e:
         log.err(e)
         raise e
