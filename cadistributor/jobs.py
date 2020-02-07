@@ -31,7 +31,7 @@ def get_worker_state(workername):
         })
         if result is None:
             return 404
-        return result["state"]
+        return dumps(result["state"])
     except Exception as e:
         log.err(e)
         raise e
