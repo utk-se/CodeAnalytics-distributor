@@ -58,7 +58,7 @@ def update_worker_state(workername, state):
         }}, return_document=pymongo.ReturnDocument.AFTER)
         if worker is None:
             return 404
-        return dumps(worker["state"])
+        return worker["state"]
     except Exception as e:
         log.err(e)
         raise e
@@ -71,7 +71,7 @@ def get_job_by_id(objectid):
             "_id": ObjectId(objectid)
         })
         # log.info(str(result))
-        return dumps(result)
+        return result
     except bson.errors.InvalidId as e:
         log.warn("InvalidId: " + str(objectid))
         return 406 # "Not Acceptable"
@@ -82,7 +82,7 @@ def get_unclaimed_job():
     })
     if result is None:
         return None
-    return dumps(result)
+    return result
 
 def claim_next_job(workername):
     try:
@@ -101,7 +101,7 @@ def claim_next_job(workername):
         if replacement.modified_count == 0:
             return 503
         log.info(f"{workername} claimed job {job['_id']}")
-        return dumps(job)
+        return job
     except Exception as e:
         log.err(e)
         return None

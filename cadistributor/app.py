@@ -42,14 +42,9 @@ def get_client_token(clientid):
     else:
         return token
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
-    return 'Hi. If you don\'t know what this is, you probably shouldn\'t be here.'
-
-@app.route('/', methods=['POST', 'PUT'])
-def indexdata():
-    log.debug(request.get_json())
-    return request.get_json()
+    return 'Hi. If you don\'t know what this is, you probably shouldn\'t be here.', 418
 
 @app.after_request
 def add_header(r):
@@ -66,14 +61,14 @@ def add_header(r):
 @app.route('/status', methods=['GET'])
 def statuspage():
     '''Frontend for seeing activity of the requesters'''
-    return 'Seems ok from here.'
+    return 'Seems ok from here.', 200
 
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
     state = jobs.get_worker_state(workerid)
     if type(state) == int:
         return str(state), state
-    return dumps(state, indent=4, sort_keys=True), 200
+    return dumps(state, indent=2, sort_keys=True), 200
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
@@ -87,7 +82,7 @@ def update_worker_status(workerid):
     newstate = jobs.update_worker_state(workerid, data)
     if type(newstate) is int:
         return {"error": newstate}, newstate
-    return newstate, 200
+    return dumps(newstate), 200
 
 ### /jobs/
 
@@ -98,7 +93,7 @@ def get_next_job():
     result = jobs.get_unclaimed_job()
     if result is None:
         return "No unclaimed job found.", 204 # no content
-    return result
+    return dumps(result), 200
 
 @app.route('/jobs/claim_next', methods=['GET'])
 @auth.login_required
@@ -110,7 +105,7 @@ def claim_next_job():
     elif result is 503:
         return "Job claimed by other, try again.", 503
     else:
-        return result
+        return dumps(result), 200
 
 @app.route('/jobs/list', methods=['GET'])
 @auth.login_required
@@ -133,11 +128,11 @@ def get_job(jobid):
     '''Return the full job object'''
     result = jobs.get_job_by_id(jobid)
     if type(result) is int:
-        return "No such job: " + jobid, result
+        return "Error getting job id: " + jobid, result
     elif result is None:
         return "Could not find that job.", 404
     elif result:
-        return result, 200
+        return dumps(result), 200
 
 @app.route('/jobs/<jobid>', methods=['PUT'])
 @auth.login_required
