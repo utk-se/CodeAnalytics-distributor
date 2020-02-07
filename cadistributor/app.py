@@ -70,8 +70,8 @@ def statuspage():
 
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
-    status, state = jobs.get_worker_status(workerid)
-    return {"status": status, "state": state}, 200
+    state = jobs.get_worker_state(workerid)
+    return state, 200
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
@@ -81,14 +81,11 @@ def update_worker_status(workerid):
     data = request.get_json(force=True)
     if data is None:
         return 400
-    log.debug("worker" + workerid + "update", data)
-    jobs.update_worker_status(
-        workerid,
-        data["status"],
-        data
-    )
-    newstatus = jobs.get_worker_status(workerid)
-    return newstatus[1], 200
+    log.debug(f"worker {workerid} status update: {data['status']} ")
+    newstate = jobs.update_worker_state(workerid, data)
+    if type(newstate) is int:
+        return {"error": newstate}, newstate
+    return newstate, 200
 
 ### /jobs/
 

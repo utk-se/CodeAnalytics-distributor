@@ -13,7 +13,7 @@ def ping_master():
     log.debug(r)
     log.debug(r.content)
 
-def get_worker_status():
+def get_worker_state():
     r = requests.get(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
     )
@@ -30,7 +30,6 @@ def checkin(status: str = "nothing", state: dict = {}):
         "lastcheckin_human": now.strftime('%F %T %z')
     }
     newdata.update(state)
-    # log.debug(newdata)
     r = requests.put(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
         json=newdata,

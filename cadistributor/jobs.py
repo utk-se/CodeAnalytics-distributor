@@ -22,17 +22,19 @@ db = dbclient.get_database(name='ca-core')
 jobcollection = db.get_collection('jobs')
 workercollection = db.get_collection('workers')
 
-def get_worker_status(workername):
+### workercollection
+
+def get_worker_state(workername):
     try:
         result = workercollection.find_one({
             "name": workername
         })
         if result is None:
             return 404
-        return result["status"], result["state"]
+        return result["state"]
     except Exception as e:
         log.err(e)
-        # raise e
+        raise e
 
 def get_worker_token(workername):
     try:
@@ -40,27 +42,27 @@ def get_worker_token(workername):
             "name": workername
         })
         if result is None:
-            return 401 # unauthorized
+            return None # unauthorized
         return result["token"]
     except Exception as e:
         log.err(e)
-        return 500
+        return None
 
-def update_worker_status(workername, status, state):
+def update_worker_state(workername, state):
     try:
         worker = workercollection.find_one_and_update({
             "name": workername
-        }, {
-            "$set": {
-                "status": status,
-                "state": state
-            }
-        })
+        }, {"$set": {
+            "state": state
+        }}, return_document=pymongo.ReturnDocument.AFTER)
         if worker is None:
             return 404
+        return worker["state"]
     except Exception as e:
         log.err(e)
         raise e
+
+### jobcollection
 
 def get_job_by_id(objectid):
     try:
