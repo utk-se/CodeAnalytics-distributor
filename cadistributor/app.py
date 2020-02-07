@@ -2,12 +2,14 @@
 import secrets
 import flask
 from . import log, jobs
+from bson.json_util import loads, dumps
 from flask import request
-from flask_httpauth import HTTPDigestAuth
+from flask_httpauth import HTTPBasicAuth
 
 app = flask.Flask(__name__)
-auth = HTTPDigestAuth()
+auth = HTTPBasicAuth()
 
+log.setLevel(log.DEBUG)
 log.info("Setting up app...")
 
 log.info("Getting SESSIONKEY...")
@@ -31,12 +33,33 @@ except Exception as e:
 
 @auth.get_password
 def get_client_token(clientid):
-    # TODO get token from db
-    return 'FM2oSiwS'
+    token = jobs.get_worker_token(clientid)
+    if type(token) is not str:
+        if token == 401: # unauthorized
+            log.debug("No token for client", clientid)
+            return None
+        raise ValueError(token)
+    else:
+        return token
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return 'Hi. If you don\'t know what this is, you probably shouldn\'t be here.'
+
+@app.route('/', methods=['POST', 'PUT'])
+def indexdata():
+    log.debug(request.get_json())
+    return request.get_json()
+
+@app.after_request
+def add_header(r):
+    """
+    Force no caching.
+    """
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
 
 ### /status/
 
@@ -47,23 +70,48 @@ def statuspage():
 
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
-    # TODO
-    return {"status": 'Probably doing work.'}
+    status, state = jobs.get_worker_status(workerid)
+    return {"status": status, "state": state}, 200
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
 def update_worker_status(workerid):
     if auth.username() != workerid:
-        return 'Not allowed.', 401
-    return { "you": "are not really working" }, 200
+        return 'Not allowed.', 403
+    data = request.get_json(force=True)
+    if data is None:
+        return 400
+    log.debug("worker" + workerid + "update", data)
+    jobs.update_worker_status(
+        workerid,
+        data["status"],
+        data
+    )
+    newstatus = jobs.get_worker_status(workerid)
+    return newstatus[1], 200
 
 ### /jobs/
 
 @app.route('/jobs/next', methods=['GET'])
 @auth.login_required
 def get_next_job():
-    '''Return the id of a job that hasn't started yet.'''
-    return 'No jobs yet.'
+    '''Return a job that hasn't been claimed yet.'''
+    result = jobs.get_unclaimed_job()
+    if result is None:
+        return "No unclaimed job found.", 204 # no content
+    return result
+
+@app.route('/jobs/claim_next', methods=['GET'])
+@auth.login_required
+def claim_next_job():
+    workername = auth.username()
+    result = jobs.claim_next_job(workername)
+    if result is None:
+        return "No unclaimed job found.", 204
+    elif result is 503:
+        return "Job claimed by other, try again.", 503
+    else:
+        return result
 
 @app.route('/jobs/list', methods=['GET'])
 @auth.login_required

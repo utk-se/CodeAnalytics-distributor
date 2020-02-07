@@ -1,7 +1,7 @@
 
-import argparse, datetime
+import argparse, datetime, json
 import requests, toml
-from requests.auth import HTTPDigestAuth
+from requests.auth import HTTPBasicAuth
 from . import log
 
 config = {}
@@ -22,24 +22,27 @@ def get_worker_status():
     elif r.status_code == requests.codes.unauthorized:
         raise ConnectionRefusedError("unauthorized")
 
-def checkin(state: str = "nothing", extra_status_data: dict = {}):
+def checkin(status: str = "nothing", state: dict = {}):
     now = datetime.datetime.now(datetime.timezone.utc)
     newdata={
-        "state": state,
+        "status": status,
         "lastcheckin": now.isoformat(),
         "lastcheckin_human": now.strftime('%F %T %z')
     }
-    newdata.update(extra_status_data)
+    newdata.update(state)
+    # log.debug(newdata)
     r = requests.put(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
-        data=newdata,
+        json=newdata,
         auth=config["auth"]
     )
     if r.status_code == requests.codes.unauthorized:
         log.error(r)
         raise ConnectionRefusedError("checkin: 401")
-    log.debug(r)
-    log.debug(r.json())
+    if r.status_code == requests.codes.bad_request:
+        log.err(r)
+        raise RuntimeError("bad request")
+    log.debug(f"Checkin completed: {r.json()}")
 
 def claim_job(job):
     r = requests.post(
@@ -106,7 +109,7 @@ def __main__():
     try:
         assert config["api"]["baseuri"] is not None
         assert config["analysis"]["tempdir"] is not None
-        config["auth"] = HTTPDigestAuth(
+        config["auth"] = HTTPBasicAuth(
             config["api"]["workername"],
             config["api"]["token"]
         )
@@ -116,6 +119,8 @@ def __main__():
 
     log.info("Pinging API...")
     ping_master()
+
+    log.info("Worker: " + config["api"]["workername"])
 
     log.info("Checking in...")
     checkin("bootup")
