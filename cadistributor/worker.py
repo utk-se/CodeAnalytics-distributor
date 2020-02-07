@@ -21,13 +21,15 @@ def get_worker_state():
         return r.json()
     elif r.status_code == requests.codes.unauthorized:
         raise ConnectionRefusedError("unauthorized")
+    elif r.status_code == requests.codes.not_found:
+        raise RuntimeError(f"Worker status for \'{config['api']['workername']}\' not found on server!")
     else:
         log.error(f"Unknown response: {r.status_code}")
         raise RuntimeError(f"Unknown response: {r.status_code}")
 
 def checkin(status: str = "nothing", state: dict = {}):
     now = datetime.datetime.utcnow()
-    data = get_worker_state()
+    data = get_worker_state() or {}
     newdata={
         "status": status,
         "lastcheckin": now.isoformat(),
@@ -143,9 +145,14 @@ def __main__():
         )
         if not config["job"].get("repodir"):
             config["job"]["repodir"] = "job-%s"
+    except KeyError as e:
+        log.error("Config missing value!")
+        log.error(e)
+        raise e
     except AssertionError as e:
         log.error("Config check failed:")
         log.error(e)
+        raise e
 
     log.info("Pinging API...")
     ping_master()

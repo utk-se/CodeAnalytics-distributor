@@ -5,7 +5,7 @@ workername = "example"
 token = "replaceme"
 
 [job]
-tempdir = "/tmp/ca-workdir/ca-worker-%s"
-jobdirpattern = "job-%s"
+workdir = "/tmp/ca-workdir/ca-worker-%s"
+repodir = "job-%s"
 analysis_program = "ca-analyzer"
 result_file = "outfile.json"
