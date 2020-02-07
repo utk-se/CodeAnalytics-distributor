@@ -140,22 +140,15 @@ def write_job_data(jobid):
     '''Overwrites the job object'''
     return 'Not implemented'
 
-@app.route('/jobs/claim/<jobid>', methods=['POST'])
-@auth.login_required
-def claim_job(jobid):
-    """Reject if the job is already claimed."""
-    return 'Not implemented' # TODO
-
 @app.route('/jobs/<jobid>', methods=['PATCH'])
 @auth.login_required
 def update_job(jobid):
     '''Modifies the job object'''
-    return 'Not implemented'
+    return 'Not implemented', 405
 
 @app.route('/jobs/<jobid>', methods=['DELETE'])
 @auth.login_required
 def delete_job(jobid):
-    '''Yep.'''
-    return 'Not implemented'
+    return 'Not allowed.', 405
 
 log.info("App import done.")
