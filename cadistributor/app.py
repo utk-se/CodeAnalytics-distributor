@@ -71,6 +71,8 @@ def statuspage():
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
     state = jobs.get_worker_state(workerid)
+    if type(state) == int:
+        return str(state), state
     return state, 200
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
