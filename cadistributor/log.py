@@ -174,7 +174,7 @@ log = info = logger.info
 err = error = logger.error
 dbg = debug = logger.debug
 crit = critical = logger.critical
-warn = warning = logger.warn
+warn = warning = logger.warning
 setLevel = logger.setLevel
 DEBUG = logging.DEBUG
 INFO = logging.INFO
