@@ -60,6 +60,7 @@ def add_header(r):
 def git_pull():
     data = request.get_json(force=True)
     log.info(f"githook: {data}")
+    log.info(f"headers: {request.headers}")
     # verify secret token
     # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
     #
