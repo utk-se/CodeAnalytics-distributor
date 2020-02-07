@@ -66,7 +66,12 @@ def git_pull():
     # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
     # lol nevermind, idk how to parse it
     if data["pusher"]["name"] == "robobenklein":
-        proc = subprocess.run(["git", "pull"], text=True)
+        proc = subprocess.run(
+            ["git", "pull"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
         if proc.returncode != 0:
             log.warn("git pull failed:")
             for line in proc.stdout.split('\n'):
