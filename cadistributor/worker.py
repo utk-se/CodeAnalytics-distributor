@@ -184,7 +184,8 @@ if __name__ == "__main__":
         checkin("error",{
             "error": {
                 "type": str(type(e)),
-                "str": str(e)
+                "str": str(e),
+                "time": datetime.datetime.utcnow().isoformat()
             }
         })
         raise e
