@@ -56,6 +56,13 @@ def add_header(r):
     r.headers["Expires"] = "0"
     return r
 
+@app.route('/githook', methods=['POST'])
+def git_pull():
+    data = request.get_json(Force=True)
+    log.info(f"githook: {data}")
+    # verify secret token
+    # RA8wADRDGGs8zJx7FoDiutVqS7yujyIdPQPar4BqIzuc
+
 ### /status/
 
 @app.route('/status', methods=['GET'])
