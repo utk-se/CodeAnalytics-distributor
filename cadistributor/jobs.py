@@ -2,7 +2,7 @@
 from . import log
 import pymongo
 from pymongo.mongo_client import MongoClient
-import bson, json
+import bson, json, datetime
 from bson.objectid import ObjectId
 from bson.json_util import loads, dumps
 
@@ -53,7 +53,8 @@ def update_worker_state(workername, state):
         worker = workercollection.find_one_and_update({
             "name": workername
         }, {"$set": {
-            "state": state
+            "state": state,
+            "changed": datetime.datetime.utcnow()
         }}, return_document=pymongo.ReturnDocument.AFTER)
         if worker is None:
             return 404
@@ -92,12 +93,14 @@ def claim_next_job(workername):
             return None
         job["status"] = "claimed"
         job["claimed_by"] = workername
+        job["claimtime"] = datetime.datetime.utcnow()
         replacement = jobcollection.replace_one({
             "_id": job["_id"],
             "status": "unclaimed"
         }, job)
         if replacement.modified_count == 0:
             return 503
+        log.info(f"{workername} claimed job {job['_id']}")
         return dumps(job)
     except Exception as e:
         log.err(e)
