@@ -73,7 +73,7 @@ def get_worker_status(workerid):
     state = jobs.get_worker_state(workerid)
     if type(state) == int:
         return str(state), state
-    return dumps(state, indent=2), 200
+    return dumps(state, indent=4, sort_keys=True), 200
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
