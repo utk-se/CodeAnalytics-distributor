@@ -1,12 +1,8 @@
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 import sys
 import os
 
 version = '0.0.1'
-
-install_reqs = parse_requirements('./requirements.txt')
-reqs = [str(ir.req) for ir in install_reqs]
 
 setup(name='CA Distributor',
     version=version,
@@ -21,7 +17,15 @@ setup(name='CA Distributor',
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
     include_package_data=True,
     zip_safe=False,
-    install_requires=reqs,
+    install_requires=[
+        "coloredlogs",
+        "Flask",
+        "pymongo",
+        "toml",
+        "Flask-HTTPAuth",
+        "gunicorn",
+        "requests"
+    ],
     # scripts=[
     #   'cadistributor/__main__.py'
     # ],

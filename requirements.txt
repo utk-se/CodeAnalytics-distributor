@@ -1,7 +1,1 @@
-coloredlogs
-Flask
-pymongo
-toml
-Flask-HTTPAuth
-gunicorn
-requests
+.
