@@ -50,12 +50,9 @@ def checkin(status: str = "nothing", state: dict = {}):
         raise RuntimeError("bad request")
     log.debug(f"Checkin completed: {r.json()}")
 
-def claim_job(job):
-    r = requests.post(
-        config["api"]["baseuri"] + "/jobs/claim/" + job._id,
-        data={
-            "worker": config["api"]["workername"]
-        },
+def claim_job():
+    r = requests.get(
+        config["api"]["baseuri"] + "/jobs/claim_next",
         auth=config["auth"]
     )
     if r.status_code == requests.codes.ok:
@@ -72,6 +69,7 @@ def claim_job(job):
             "url": job["url"]
         }}
     )
+    return r.json()
 
 def run_job(job):
     checkin("setup", {
