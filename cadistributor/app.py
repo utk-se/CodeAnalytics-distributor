@@ -143,10 +143,10 @@ def list_jobs():
 def add_job():
     return 'Not implemented'
 
-@app.route('/jobs/remove', methods=['POST'])
+@app.route('/jobs/<jobid>/remove', methods=['POST'])
 @auth.login_required
-def remove_job():
-    return 'Not implemented'
+def remove_job(jobid):
+    return 'Not implemented', 405
 
 @app.route('/jobs/<jobid>', methods=['GET'])
 @auth.login_required
@@ -160,11 +160,15 @@ def get_job(jobid):
     elif result:
         return dumps(result), 200
 
-@app.route('/jobs/<jobid>', methods=['PUT'])
+@app.route('/jobs/<jobid>/result/<version>', methods=['PUT'])
 @auth.login_required
-def write_job_data(jobid):
-    '''Overwrites the job object'''
-    return 'Not implemented'
+def write_job_data(jobid, version):
+    '''Adds results to a job'''
+    data = request.get_json(force=True)
+    if data is None:
+        return 400
+    log.debug(f"Result version {version} submitted for job {jobid}")
+    add_result_to_job(jobid, version, data)
 
 @app.route('/jobs/<jobid>', methods=['PATCH'])
 @auth.login_required

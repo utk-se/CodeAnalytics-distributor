@@ -2,12 +2,13 @@ from setuptools import setup, find_packages
 import sys
 import os
 
-version = '0.0.1'
+import cadistributor as mainmodule
 
-setup(name='CA Distributor',
-    version=version,
+setup(
+    name='CA Distributor',
+    version=mainmodule.__version__,
     description="CodeAnalytics Distributor",
-    long_description="",
+    long_description=mainmodule.__doc__,
     classifiers=[],  # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     keywords='codeanalytics research',
     author='Ben Klein, Alan Grant',
@@ -24,14 +25,12 @@ setup(name='CA Distributor',
         "toml",
         "Flask-HTTPAuth",
         "gunicorn",
-        "requests"
+        "requests",
+        "pygit2"
     ],
-    # scripts=[
-    #   'cadistributor/__main__.py'
-    # ],
     entry_points={
         'console_scripts': [
-            'ca-distributor=cadistributor.__main__:main'
+            'ca-worker=cadistributor.worker:__main__'
         ]
     },
 )

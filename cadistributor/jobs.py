@@ -84,24 +84,39 @@ def get_unclaimed_job():
         return None
     return result
 
+def claim_job(job, claimer):
+    job["status"] = "claimed"
+    job["claim"] = {}
+    job["claim"]["worker"] = claimer
+    job["claim"]["time"] = datetime.datetime.utcnow()
+    replacement = jobcollection.replace_one({
+        "_id": job["_id"],
+        "status": "unclaimed"
+    }, job)
+    if replacement.modified_count == 0:
+        return 503
+    log.info(f"{claimer} claimed job {job['_id']}")
+    return job
+
 def claim_next_job(workername):
     try:
-        job = jobcollection.find_one({
-            "status": "unclaimed"
-        })
+        job = get_unclaimed_job()
         if job is None:
             return None
-        job["status"] = "claimed"
-        job["claimed_by"] = workername
-        job["claimtime"] = datetime.datetime.utcnow()
-        replacement = jobcollection.replace_one({
-            "_id": job["_id"],
-            "status": "unclaimed"
-        }, job)
-        if replacement.modified_count == 0:
-            return 503
-        log.info(f"{workername} claimed job {job['_id']}")
+        job = claim_job(job, workername)
         return job
     except Exception as e:
         log.err(e)
         return None
+
+def add_result_to_job(jobid, version, result):
+    job = get_job_by_id(jobid)
+    if job.get("results", None) is None:
+        job["results"] = {}
+    job["results"][version] = result
+    replacement = jobcollection.replace_one({
+        "_id": job["_id"],
+    }, job)
+    if replacement.modified_count == 0:
+        log.err("Failed to save result to job!")
+        log.warn("Zero documents modified by replacement.")

@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 
 import argparse, datetime, json, os, time
 import requests, toml
+import pygit2 as git
 from requests.auth import HTTPBasicAuth
 from . import log
 
@@ -43,12 +45,13 @@ def checkin(status: str = "nothing", state: dict = {}):
         auth=config["auth"]
     )
     if r.status_code == requests.codes.unauthorized:
-        log.error(r)
+        log.err(r)
         raise ConnectionRefusedError("checkin: 401")
     if r.status_code == requests.codes.bad_request:
         log.err(r)
         raise RuntimeError("bad request")
-    log.debug(f"Checkin completed: {r.json()}")
+    # log.debug(f"Checkin completed: {r.json()}")
+    log.debug(f"Checkin completed: {status}")
 
 def claim_job():
     r = requests.get(
@@ -83,9 +86,12 @@ def run_job(job):
     workdir = config["job"]["workdir"] % config["api"]["workername"]
     os.makedirs(workdir, mode=0o750, exist_ok=True)
     os.chdir(workdir)
+    log.debug(f"Working in {workdir}")
     repodir = config["job"]["repodir"] % job["_id"]
     os.makedirs(repodir)
 
+    # clone repo inside tempdir
+    # into repodir
     checkin("clone", {
         "job": {
             "_id": job["_id"],
@@ -94,9 +100,11 @@ def run_job(job):
             "repodir": repodir
         }
     })
-
-    # TODO clone repo inside tempdir
-    # into repodir
+    log.info(f"Beginning clone for job {job['_id']}")
+    git.clone_repository(
+        job["url"],
+        repodir
+    )
 
     checkin("analyze", {
         "job": {
@@ -162,25 +170,8 @@ def __main__():
         "endpoint": config["api"]["baseuri"]
     })
 
-    main_loop()
-
-    checkin("exited")
-
-
-def main_loop():
-    # TODO check if previous job was finished,
-    # if not: get that job and run it
-
-    while True:
-        log.debug("main_loop")
-        checkin("sleeping")
-        time.sleep(5)
-
-
-if __name__ == "__main__":
-    # TODO catch
     try:
-        __main__()
+        main_loop()
     except KeyboardInterrupt as e:
         log.warn("Stopping from SIGINT...")
         checkin("stopped")
@@ -194,3 +185,28 @@ if __name__ == "__main__":
             }
         })
         raise e
+
+    checkin("exited")
+
+
+def main_loop():
+    # TODO check if previous job was finished,
+    # if not: get that job and run it
+
+    while True:
+        log.debug("main_loop")
+        checkin("sleeping")
+        time.sleep(5)
+
+        try:
+            job = claim_job()
+            if job is not None:
+                log.info(f"Claimed job: {job['_id']}, going to work.")
+                run_job(job)
+        except RuntimeError as e:
+            log.warn("Failed to claim job, continuing main loop.")
+            log.err(e)
+
+
+if __name__ == "__main__":
+    __main__()
