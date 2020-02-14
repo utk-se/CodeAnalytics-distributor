@@ -164,7 +164,7 @@ def get_job(jobid):
 @auth.login_required
 def write_job_data(jobid, version):
     '''Adds results to a job'''
-    data = request.get_json(force=True)
+    data = loads(request.data)
     if data is None:
         return 400
     log.debug(f"Result version {version} submitted for job {jobid}")
