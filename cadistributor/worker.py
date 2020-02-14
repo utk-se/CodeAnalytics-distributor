@@ -2,6 +2,8 @@
 
 import argparse, datetime, json, os, time
 import requests, toml
+from bson import json_util
+from bson.json_util import loads, dumps
 import pygit2 as git
 from requests.auth import HTTPBasicAuth
 from . import log
@@ -20,7 +22,7 @@ def get_worker_state():
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
     )
     if r.ok:
-        return r.json()
+        return loads(r.text)
     elif r.status_code == requests.codes.unauthorized:
         raise ConnectionRefusedError("unauthorized")
     elif r.status_code == requests.codes.not_found:
@@ -39,10 +41,12 @@ def checkin(status: str = "nothing", state: dict = {}):
     }
     newdata.update(state)
     data.update(newdata)
+    log.debug(f"Putting data: {dumps(data)}")
     r = requests.put(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
-        json=data,
-        auth=config["auth"]
+        data=dumps(data),
+        auth=config["auth"],
+        headers={'Content-Type': 'application/json'}
     )
     if r.status_code == requests.codes.unauthorized:
         log.err(r)
@@ -62,9 +66,15 @@ def claim_job():
         log.info("Claimed job successfully.")
     elif r.status_code == requests.codes.not_modified:
         log.warn("Job was already claimed by this worker, reclaimed.")
+    elif r.status_code == requests.codes.no_content:
+        log.debug("No jobs available.")
+        return None
     else:
-        log.error("Failed to claim job:", job._id)
+        log.error("Failed to claim job.")
+        log.error(r.status_code)
+        log.error(r.content)
         raise RuntimeError("Job Claim Fail")
+    job = loads(r.text)
     checkin(
         "claimed job",
         {"job": {
@@ -72,7 +82,7 @@ def claim_job():
             "url": job["url"]
         }}
     )
-    return r.json()
+    return job
 
 def run_job(job):
     checkin("setup", {
@@ -195,8 +205,6 @@ def main_loop():
 
     while True:
         log.debug("main_loop")
-        checkin("sleeping")
-        time.sleep(5)
 
         try:
             job = claim_job()
@@ -206,6 +214,9 @@ def main_loop():
         except RuntimeError as e:
             log.warn("Failed to claim job, continuing main loop.")
             log.err(e)
+
+        checkin("sleeping")
+        time.sleep(5)
 
 
 if __name__ == "__main__":
