@@ -101,7 +101,7 @@ def get_worker_status(workerid):
 def update_worker_status(workerid):
     if auth.username() != workerid:
         return 'Not allowed.', 403
-    data = request.get_json(force=True)
+    data = loads(request.data)
     if data is None:
         return 400
     log.debug(f"worker {workerid} status update: {data['status']} ")

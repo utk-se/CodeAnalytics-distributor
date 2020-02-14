@@ -36,12 +36,12 @@ def checkin(status: str = "nothing", state: dict = {}):
     data = get_worker_state() or {}
     newdata={
         "status": status,
-        "lastcheckin": now.isoformat(),
+        "lastcheckin": now,
         "lastcheckin_human": now.strftime('%F %T %z')
     }
     newdata.update(state)
     data.update(newdata)
-    log.debug(f"Putting data: {dumps(data)}")
+    # log.debug(f"Putting data: {dumps(data)}")
     r = requests.put(
         config["api"]["baseuri"] + "/status/worker/" + config["api"]["workername"],
         data=dumps(data),
@@ -55,7 +55,7 @@ def checkin(status: str = "nothing", state: dict = {}):
         log.err(r)
         raise RuntimeError("bad request")
     # log.debug(f"Checkin completed: {r.json()}")
-    log.debug(f"Checkin completed: {status}")
+    log.info(f"Checkin completed: {status}")
 
 def claim_job():
     r = requests.get(
