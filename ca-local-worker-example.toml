@@ -7,5 +7,4 @@ token = "replaceme"
 [job]
 workdir = "/tmp/ca-workdir/ca-worker-%s"
 repodir = "job-%s"
-analysis_program = "ca-analyzer"
-result_file = "outfile.json"
+analysis_function = "caanalyzer:analyze"

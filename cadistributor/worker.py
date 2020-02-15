@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse, datetime, json, os, time
+import importlib
 import requests, toml
 from bson import json_util
 from bson.json_util import loads, dumps
@@ -116,18 +117,37 @@ def run_job(job):
         repodir
     )
 
+    funcname = config['analysis']['function'].__module__ + ":" + config['analysis']['function'].__name__
+    log.debug(f"Using analysis_function: {funcname}")
     checkin("analyze", {
         "job": {
             "_id": job["_id"],
             "url": job["url"],
             "workdir": workdir,
-            "repodir": repodir
+            "repodir": repodir,
+            "function": funcname
         }
     })
 
-    # TODO run analysis_program <jobdir>
+    # run analysis_program for <repodir>
+    try:
+        result = config['analysis']['function'](repodir)
+        assert result['version'] is not None
+    except Exception as e:
+        log.err("Unknown exception when calling the analysis_function!")
+        raise e # will let the main loop report error to server
 
-    # TODO fetch and return json from result_file
+    # TODO return result to server
+    r = requests.put(
+        config["api"]["baseuri"] + "/job/" + job["_id"] + "/result/" + result['version'],
+        data=dumps(result),
+        auth=config["auth"],
+        headers={'Content-Type': 'application/json'}
+    )
+    if not r.ok():
+        log.err("Unknown error when submitting job result!")
+        log.warn(r)
+        raise ConnectionError("Failed to communicate result to server.")
 
     checkin("completed")
 
@@ -161,6 +181,11 @@ def __main__():
         )
         if not config["job"].get("repodir"):
             config["job"]["repodir"] = "job-%s"
+        f_target = config["job"]["analysis_function"].rsplit(':', 1)
+        config["analysis"] = {
+            "module": f_target[0],
+            "function": f_target[1]
+        }
     except KeyError as e:
         log.error("Config missing value!")
         log.error(e)
@@ -169,6 +194,24 @@ def __main__():
         log.error("Config check failed:")
         log.error(e)
         raise e
+
+    log.info("Initializing analysis_function...")
+    try:
+        target_func_module = importlib.import_module(config["analysis"]["module"])
+        config["analysis"]["module"] = target_func_module
+    except ImportError as e:
+        log.err(f"Could not import analysis_function module: {config['analysis']['module']}")
+        log.err(e)
+        raise e
+
+    if config["analysis"]["function"] not in config["analysis"]["module"].__dict__:
+        log.err(f"Could not find analysis_function {config['analysis']['function']} in module {config['analysis']['module'].__name__}.")
+        raise ValueError(f"analysis_function \"{config['analysis']['function']}\" not in module \"{config['analysis']['module'].__name__}\"")
+
+    config["analysis"]["function"] = config["analysis"]["module"].__dict__[config["analysis"]["function"]]
+    if type(config["analysis"]["function"]) != type(lambda x: x):
+        log.err("analysis_function does not appear to be a function!")
+        raise AssertionError(f"type({config['analysis']['function']}) is not {type(lambda x: x)}")
 
     log.info("Pinging API...")
     ping_master()
