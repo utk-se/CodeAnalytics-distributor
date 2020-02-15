@@ -191,7 +191,7 @@ def __main__():
             "error": {
                 "type": str(type(e)),
                 "str": str(e),
-                "time": datetime.datetime.utcnow().isoformat()
+                "time": datetime.datetime.utcnow()
             }
         })
         raise e
