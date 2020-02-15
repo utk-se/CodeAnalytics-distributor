@@ -11,6 +11,9 @@ from . import log
 
 config = {}
 
+class JobClaimFail(RuntimeError):
+    pass
+
 def ping_master():
     r = requests.get(
         config["api"]["baseuri"] + "/status"
@@ -74,7 +77,7 @@ def claim_job():
         log.error("Failed to claim job.")
         log.error(r.status_code)
         log.error(r.content)
-        raise RuntimeError("Job Claim Fail")
+        raise JobClaimFail()
     job = loads(r.text)
     checkin(
         "claimed job",
@@ -225,6 +228,7 @@ def __main__():
 
     try:
         main_loop()
+        checkin("exited")
     except KeyboardInterrupt as e:
         log.warn("Stopping from SIGINT...")
         checkin("stopped")
@@ -239,8 +243,6 @@ def __main__():
         })
         raise e
 
-    checkin("exited")
-
 
 def main_loop():
     # TODO check if previous job was finished,
@@ -254,7 +256,7 @@ def main_loop():
             if job is not None:
                 log.info(f"Claimed job: {job['_id']}, going to work.")
                 run_job(job)
-        except RuntimeError as e:
+        except JobClaimFail as e:
             log.warn("Failed to claim job, continuing main loop.")
             log.err(e)
 
