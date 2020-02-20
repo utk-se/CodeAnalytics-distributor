@@ -146,7 +146,7 @@ def run_job(job):
 
     # return result to server
     r = requests.put(
-        config["api"]["baseuri"] + "/job/" + job["_id"] + "/result/" + result['version'],
+        config["api"]["baseuri"] + "/job/" + job["_id"].valueOf() + "/result/" + result['version'],
         data=dumps(result),
         auth=config["auth"],
         headers={'Content-Type': 'application/json'}
