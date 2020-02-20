@@ -166,9 +166,12 @@ def write_job_data(jobid, version):
     '''Adds results to a job'''
     data = loads(request.data)
     if data is None:
-        return 400
+        return "No valid data supplied.", 400
+    if version != data['version']:
+        return "Data version does not match endpoint.", 400
     log.debug(f"Result version {version} submitted for job {jobid}")
     add_result_to_job(jobid, version, data)
+    return "Data stored.", 201 # created
 
 @app.route('/jobs/<jobid>', methods=['PATCH'])
 @auth.login_required

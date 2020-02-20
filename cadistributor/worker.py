@@ -135,12 +135,16 @@ def run_job(job):
     # run analysis_program for <repodir>
     try:
         result = config['analysis']['function'](repodir)
+        result['version'] = config['analysis'].__version__
         assert result['version'] is not None
+    except AssertionError as e:
+        log.err("Result from analyzer malformed.")
+        raise e
     except Exception as e:
         log.err("Unknown exception when calling the analysis_function!")
         raise e # will let the main loop report error to server
 
-    # TODO return result to server
+    # return result to server
     r = requests.put(
         config["api"]["baseuri"] + "/job/" + job["_id"] + "/result/" + result['version'],
         data=dumps(result),
@@ -150,6 +154,7 @@ def run_job(job):
     if not r.ok():
         log.err("Unknown error when submitting job result!")
         log.warn(r)
+        log.debug(r.text)
         raise ConnectionError("Failed to communicate result to server.")
 
     checkin("completed")
