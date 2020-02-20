@@ -104,7 +104,7 @@ def update_worker_status(workerid):
     data = loads(request.data)
     if data is None:
         return 400
-    log.debug(f"worker {workerid} status update: {data['status']} ")
+    log.debug(f"worker {workerid} status: {data['status']} ")
     newstate = jobs.update_worker_state(workerid, data)
     if type(newstate) is int:
         return {"error": newstate}, newstate

@@ -120,3 +120,6 @@ def add_result_to_job(jobid, version, result):
     if replacement.modified_count == 0:
         log.err("Failed to save result to job!")
         log.warn("Zero documents modified by replacement.")
+        raise RuntimeWarning(f"No documents updated during job {jobid} result submission.")
+    else:
+        log.info(f"Job {jobid} result {version} stored.")
