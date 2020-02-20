@@ -170,7 +170,7 @@ def write_job_data(jobid, version):
     if version != data['version']:
         return "Data version does not match endpoint.", 400
     log.debug(f"Result version {version} submitted for job {jobid}")
-    add_result_to_job(jobid, version, data)
+    jobs.add_result_to_job(jobid, version, data)
     return "Data stored.", 201 # created
 
 @app.route('/jobs/<jobid>', methods=['PATCH'])
