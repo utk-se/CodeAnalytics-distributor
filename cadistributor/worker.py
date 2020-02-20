@@ -151,7 +151,7 @@ def run_job(job):
         auth=config["auth"],
         headers={'Content-Type': 'application/json'}
     )
-    if not r.ok():
+    if not r.ok: # note: is @property, not function
         log.err("Unknown error when submitting job result!")
         log.warn(r)
         log.debug(r.text)
