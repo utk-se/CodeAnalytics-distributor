@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse, datetime, json, os, time
+import shutil
 import importlib
 import requests, toml
 from bson import json_util
@@ -159,6 +160,11 @@ def run_job(job):
         log.debug(r.text)
         raise ConnectionError("Failed to communicate result to server.")
 
+    checkin("cleanup")
+
+    reportRmFailure = lambda f, p, e: log.err(f"failed to remove {p}: {e}")
+    shutil.rmtree(repodir, onerror=reportRmFailure)
+
     checkin("completed")
 
 
@@ -263,12 +269,14 @@ def main_loop():
             if job is not None:
                 log.info(f"Claimed job: {job['_id']}, going to work.")
                 run_job(job)
+            else:
+                checkin("sleeping")
+                time.sleep(5)
         except JobClaimFail as e:
             log.warn("Failed to claim job, continuing main loop.")
             log.err(e)
-
-        checkin("sleeping")
-        time.sleep(5)
+            checkin("claimfailed")
+            time.sleep(10)
 
 
 if __name__ == "__main__":
