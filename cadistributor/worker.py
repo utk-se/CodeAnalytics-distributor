@@ -135,7 +135,7 @@ def run_job(job):
     # run analysis_program for <repodir>
     try:
         result = config['analysis']['function'](repodir)
-        result['version'] = config['analysis'].__version__
+        result['version'] = config['analysis']['module'].__version__
         assert result['version'] is not None
     except AssertionError as e:
         log.err("Result from analyzer malformed.")
