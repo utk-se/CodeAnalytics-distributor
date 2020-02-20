@@ -145,8 +145,10 @@ def run_job(job):
         raise e # will let the main loop report error to server
 
     # return result to server
+    endpoint = config["api"]["baseuri"] + "/job/" + str(job["_id"]) + "/result/" + result['version']
+    log.debug(f"Result submission endpoint: {endpoint}")
     r = requests.put(
-        config["api"]["baseuri"] + "/job/" + str(job["_id"]) + "/result/" + result['version'],
+        endpoint,
         data=dumps(result),
         auth=config["auth"],
         headers={'Content-Type': 'application/json'}
