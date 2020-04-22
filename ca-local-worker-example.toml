@@ -4,8 +4,7 @@ baseuri = "https://ca-core.unhexium.dev"
 workername = "example"
 token = "replaceme"
 
-[analysis]
-tempdir = "/tmp/ca-workdir/ca-worker-%s"
-jobdirpattern = "job-%s"
-analysis_program = "ca-analyzer"
-result_file = "result.json"
+[job]
+workdir = "/tmp/ca-workdir/ca-worker-%s"
+repodir = "job-%s"
+analysis_function = "caanalyzer:analyze"
