@@ -157,15 +157,8 @@ def get_caller_name(skip: int =3):
 def prepend_caller(message: str):
     """Get the common name for the caller."""
     caller = get_caller_name()
-    if caller.startswith("__main__") or caller.startswith("jadac.__main__"):
-        caller = caller.replace("__main__", bcolors.PURPLE + "Main" + bcolors.ENDC)
-    elif "modules." in caller:
-        caller = caller.replace("modules", bcolors.BLUE + "Modules" + bcolors.ENDC)
-    elif caller.startswith("responder."):
-        caller = bcolors.GREEN + caller.split("responder.", 1)[1] + bcolors.ENDC
-    elif "JADACCmd" in caller:
-        caller = bcolors.PURPLE + "User" + bcolors.ENDC
-
+    # if caller.startswith("__main__"):
+    #     caller = caller.replace("__main__", bcolors.PURPLE + "Main" + bcolors.ENDC)
     message = "[" + caller + "]" + " " + message
     return message
 

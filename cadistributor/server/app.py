@@ -2,13 +2,34 @@
 import secrets
 import subprocess
 import flask
-from . import log, jobs
+import urllib
+from . import db
+from .. import log
+from ..utils import *
 from bson.json_util import loads, dumps
 from flask import request
 from flask_httpauth import HTTPBasicAuth
 
 app = flask.Flask(__name__)
 auth = HTTPBasicAuth()
+
+### service helpers
+
+def json_response(data, code, pretty = False):
+    response = app.response_class(
+        response=dumps(data, indent=2, sort_keys=True) if pretty else dumps(data),
+        status=code,
+        mimetype='application/json'
+    )
+    return response
+
+@app.errorhandler(CodeAnalyticsError)
+def handle_ValueError(e):
+    response = app.response_class(
+        response=e.message,
+    )
+    response.status_code = e.status_code
+    return response
 
 log.setLevel(log.DEBUG)
 log.info("Setting up app...")
@@ -34,7 +55,7 @@ except Exception as e:
 
 @auth.get_password
 def get_client_token(clientid):
-    token = jobs.get_worker_token(clientid)
+    token = db.get_worker_token(clientid)
     if type(token) is not str:
         if token == 401: # unauthorized
             log.debug("No token for client", clientid)
@@ -50,13 +71,14 @@ def index():
 @app.after_request
 def add_header(r):
     """
-    Force no caching.
+    Apply headers to served response.
     """
     r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"
     return r
 
+# automatically pulls updates I make
 @app.route('/githook', methods=['POST'])
 def git_pull():
     data = request.get_json(force=True)
@@ -91,97 +113,79 @@ def statuspage():
 
 @app.route('/status/worker/<workerid>', methods=['GET'])
 def get_worker_status(workerid):
-    state = jobs.get_worker_state(workerid)
-    if type(state) == int:
-        return str(state), state
-    return dumps(state, indent=2, sort_keys=True), 200
+    state = db.get_worker_state(workerid)
+    return json_response(state, 200, True)
 
 @app.route('/status/worker/<workerid>', methods=['PUT'])
 @auth.login_required
 def update_worker_status(workerid):
     if auth.username() != workerid:
-        return 'Not allowed.', 403
+        return 'Not allowed.', 403 # known fobidden
     data = loads(request.data)
     if data is None:
         return 400
     log.debug(f"worker {workerid} status: {data['status']} ")
-    newstate = jobs.update_worker_state(workerid, data)
-    if type(newstate) is int:
-        return {"error": newstate}, newstate
-    return dumps(newstate), 200
+    newstate = db.update_worker_state(workerid, data)
+    return json_response(newstate, 200)
+
+### /repo/
+
+@app.route('/repo/<url>', methods=['GET'])
+@auth.login_required
+def get_repo(url):
+    url = urllib.parse.unquote_plus(url)
+    result = db.get_repo(url)
+    return json_response(result, 200 if result else 404, True)
+
+@app.route('/repo/<url>', methods=['PUT'])
+@auth.login_required
+def put_repo(url):
+    url = urllib.parse.unquote_plus(url)
+    data = loads(request.data)
+    if data is None:
+        raise CodeAnalyticsError("Must supply initial object data!", 400)
+    data.update({
+        "frames": {}
+    })
+    return 'TODO', 501 # TODO not implemented
+
+@app.route('/repo/<url>/frame/<version>', methods=['PUT', 'POST'])
+@auth.login_required
+def put_repo_frame(url, version):
+    ensureVersionStringMongoSafe(version)
+    url = urllib.parse.unquote_plus(url)
+    data = loads(request.data)
+    if data is None:
+        raise CodeAnalyticsError("No valid data supplied.", 400)
+    return 'TODO', 501 # TODO not implemented
+
+@app.route('/repo/<url>/frame/<version>', methods=['GET'])
+@auth.login_required
+def get_repo_frame(repo, version):
+    ensureVersionStringMongoSafe(version)
+    url = urllib.parse.unquote_plus(url)
+    return 'TODO', 501 # TODO not implemented
 
 ### /jobs/
 
-@app.route('/jobs/next', methods=['GET'])
-@auth.login_required
-def get_next_job():
-    '''Return a job that hasn't been claimed yet.'''
-    result = jobs.get_unclaimed_job()
-    if result is None:
-        return "No unclaimed job found.", 204 # no content
-    return dumps(result), 200
+### /jobs/frame/
 
-@app.route('/jobs/claim_next', methods=['GET'])
+# give a worker a job for creating a frame of a specific version
+@app.route('/jobs/frame/<version>/claim', methods=['GET'])
 @auth.login_required
-def claim_next_job():
+def claim_frame_job(version):
     workername = auth.username()
-    result = jobs.claim_next_job(workername)
-    if result is None:
-        return "No unclaimed job found.", 204
-    elif result is 503:
-        return "Job claimed by other, try again.", 503
-    else:
-        return dumps(result), 200
+    ensureVersionStringMongoSafe(version)
+    repo = db.claim_repo_job_by_frame_version(version, workername)
+    return json_response(repo, 201 if repo else 204, True) # created / no-content
 
-@app.route('/jobs/list', methods=['GET'])
+@app.route('/jobs/frame/<version>/complete/<url>', methods=['PUT', 'POST'])
 @auth.login_required
-def list_jobs():
-    return 'Not implemented'
+def complete_frame_job(version, url):
+    ensureVersionStringMongoSafe(version)
+    url = urllib.parse.unquote_plus(url)
+    return 'TODO', 501 # TODO not implemented
 
-@app.route('/jobs/add', methods=['POST'])
-@auth.login_required
-def add_job():
-    return 'Not implemented'
-
-@app.route('/jobs/<jobid>/remove', methods=['POST'])
-@auth.login_required
-def remove_job(jobid):
-    return 'Not implemented', 405
-
-@app.route('/jobs/<jobid>', methods=['GET'])
-@auth.login_required
-def get_job(jobid):
-    '''Return the full job object'''
-    result = jobs.get_job_by_id(jobid)
-    if type(result) is int:
-        return "Error getting job id: " + jobid, result
-    elif result is None:
-        return "Could not find that job.", 404
-    elif result:
-        return dumps(result), 200
-
-@app.route('/jobs/<jobid>/result/<version>', methods=['PUT'])
-@auth.login_required
-def write_job_data(jobid, version):
-    '''Adds results to a job'''
-    data = loads(request.data)
-    if data is None:
-        return "No valid data supplied.", 400
-    if version != data['version']:
-        return "Data version does not match endpoint.", 400
-    log.debug(f"Result version {version} submitted for job {jobid}")
-    jobs.add_result_to_job(jobid, version, data)
-    return "Data stored.", 201 # created
-
-@app.route('/jobs/<jobid>', methods=['PATCH'])
-@auth.login_required
-def update_job(jobid):
-    '''Modifies the job object'''
-    return 'Not implemented', 405
-
-@app.route('/jobs/<jobid>', methods=['DELETE'])
-@auth.login_required
-def delete_job(jobid):
-    return 'Not allowed.', 405
+### end routes
 
 log.info("App import done.")

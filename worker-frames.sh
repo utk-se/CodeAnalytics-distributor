@@ -4,4 +4,4 @@ source ./venv/bin/activate
   echo "Copying example config..."
   cp ca-local-worker-example.toml ca-local-worker-config.toml
 }
-python -m cadistributor.worker -v -c ca-local-worker-config.toml
+python -m cadistributor.worker.frames -v -c ca-local-worker-config.toml

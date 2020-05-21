@@ -9,4 +9,4 @@ cadistributor.worker can be run as a program. (__main__)
 cadistributor.app:app should be run with a flask server. (like gunicorn)
 """
 
-__version__ = "0.0.2"
+__version__ = "0.1.0"

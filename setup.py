@@ -32,7 +32,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'ca-worker=cadistributor.worker:__main__'
+            'ca-frame-worker=cadistributor.worker.frames:__main__'
         ]
     },
     python_requires='>=3.6'
