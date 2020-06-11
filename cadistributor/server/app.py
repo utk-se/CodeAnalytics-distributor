@@ -4,6 +4,7 @@ import subprocess
 import flask
 import urllib
 from . import db
+from . import statuspage
 from .. import log
 from ..utils import *
 from bson.json_util import loads, dumps
@@ -107,6 +108,7 @@ def git_pull():
 ### /status/
 
 @app.route('/status', methods=['GET'])
+@auth.login_required
 def statuspage():
     '''Frontend for seeing activity of the requesters'''
     return 'Seems ok from here.', 200
@@ -149,9 +151,9 @@ def put_repo(url):
     })
     return 'TODO', 501 # TODO not implemented
 
-@app.route('/repo/<url>/frame/<version>', methods=['PUT', 'POST'])
+@app.route('/repo/<url>/result/<version>', methods=['PUT', 'POST'])
 @auth.login_required
-def put_repo_frame(url, version):
+def put_repo_result(url, version):
     ensureVersionStringMongoSafe(version)
     url = urllib.parse.unquote_plus(url)
     data = loads(request.data)
@@ -159,9 +161,9 @@ def put_repo_frame(url, version):
         raise CodeAnalyticsError("No valid data supplied.", 400)
     return 'TODO', 501 # TODO not implemented
 
-@app.route('/repo/<url>/frame/<version>', methods=['GET'])
+@app.route('/repo/<url>/result/<version>', methods=['GET'])
 @auth.login_required
-def get_repo_frame(repo, version):
+def get_repo_result(repo, version):
     ensureVersionStringMongoSafe(version)
     url = urllib.parse.unquote_plus(url)
     return 'TODO', 501 # TODO not implemented
@@ -170,18 +172,18 @@ def get_repo_frame(repo, version):
 
 ### /jobs/frame/
 
-# give a worker a job for creating a frame of a specific version
-@app.route('/jobs/frame/<version>/claim', methods=['GET'])
+# give a worker a job for creating a result of a specific version
+@app.route('/jobs/<version>/claim', methods=['GET'])
 @auth.login_required
-def claim_frame_job(version):
+def claim_result_job(version):
     workername = auth.username()
     ensureVersionStringMongoSafe(version)
     repo = db.claim_repo_job_by_frame_version(version, workername)
     return json_response(repo, 201 if repo else 204, True) # created / no-content
 
-@app.route('/jobs/frame/<version>/complete/<url>', methods=['PUT', 'POST'])
+@app.route('/jobs/<version>/submit/<url>', methods=['PUT', 'POST'])
 @auth.login_required
-def complete_frame_job(version, url):
+def complete_result_job(version, url):
     ensureVersionStringMongoSafe(version)
     url = urllib.parse.unquote_plus(url)
     return 'TODO', 501 # TODO not implemented

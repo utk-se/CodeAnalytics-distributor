@@ -12,11 +12,11 @@ from ..utils import *
 templates = {
     "repo": {
         "url": None,  # unique key
-        "frames": {
+        "result": {
             "0.0.0": {  # example, does not exist until inserted
                 "status": "claimed",
                 "worker": "ca-do-w1",
-                "gridfs_id": None
+                # "gridfs_id": None
             }
         }
     }
@@ -26,7 +26,7 @@ dbclient = MongoClient()
 db = dbclient.get_database(name='ca-core')
 workercollection = db.get_collection("workers")
 repocollection = db.get_collection("repos_v1")
-framecollection = db.get_collection("frames_v1")
+resultcollection = db.get_collection("results_v1")
 
 # workercollection
 
@@ -73,16 +73,16 @@ def get_repo(url):
         log.warn(f"Could not find repo with url: {url}")
         return None
 
-def claim_repo_job_by_frame_version(version, workerid):
+def claim_repo_job_by_result_version(version, workerid):
     try:
-        log.info(f"Claiming a frame job v{version} for {workerid}...")
+        log.info(f"Claiming a job v{version} for {workerid}...")
         target = repocollection.find_one_and_update(
             {
-                f"frames.{version}": {"$exists": False}
+                f"result.{version}": {"$exists": False}
             },
             {
                 "$set": {
-                    f"frames.{version}": {
+                    f"result.{version}": {
                         "status": "claimed",
                         "worker": workerid
                     }
