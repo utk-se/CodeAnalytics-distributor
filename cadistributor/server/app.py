@@ -147,7 +147,7 @@ def put_repo(url):
     if data is None:
         raise CodeAnalyticsError("Must supply initial object data!", 400)
     data.update({
-        "frames": {}
+        "result": {}
     })
     return 'TODO', 501 # TODO not implemented
 
@@ -170,7 +170,7 @@ def get_repo_result(repo, version):
 
 ### /jobs/
 
-### /jobs/frame/
+### /jobs/<version>/
 
 # give a worker a job for creating a result of a specific version
 @app.route('/jobs/<version>/claim', methods=['GET'])

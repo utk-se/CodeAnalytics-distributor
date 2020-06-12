@@ -92,5 +92,5 @@ def claim_repo_job_by_result_version(version, workerid):
         )
         return target
     except Exception as e:
-        log.err("Failure claiming frame job...")
+        log.err("Failure claiming job...")
         raise e
