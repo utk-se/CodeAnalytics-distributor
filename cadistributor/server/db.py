@@ -13,12 +13,17 @@ templates = {
     "repo": {
         "url": None,  # unique key
         "result": {
-            "0.0.0": {  # example, does not exist until inserted
+            "0_0_0": {  # example, does not exist until inserted
                 "status": "claimed",
                 "worker": "ca-do-w1",
                 # "gridfs_id": None
             }
         }
+    },
+    "result": {
+        "url": "repo-url",
+        "version": "0_0_0",
+        "data": None # returned json from analyzer
     }
 }
 
@@ -93,4 +98,19 @@ def claim_repo_job_by_result_version(version, workerid):
         return target
     except Exception as e:
         log.err("Failure claiming job...")
+        raise e
+
+# resultcollection
+
+def store_json_result(version, workerid, data):
+    try:
+        log.info(f"Storing result v{version} from {workerid} ...")
+        r = resultcollection.insert_one({
+            "version": version,
+            "worker": workerid,
+            "data": data
+        })
+        # TODO is there any way to check the insertion?
+    except Exception as e:
+        log.err("Failed to store result into db...")
         raise e

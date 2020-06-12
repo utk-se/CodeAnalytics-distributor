@@ -13,7 +13,7 @@ from ..utils import *
 from .api import *
 
 
-class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
+class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
     def __init__(self, configfile):
         self.config = toml.load(configfile)
         try:
@@ -44,6 +44,9 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
             target_func_module = importlib.import_module(self.config["analysis"]["module"])
             self.config["analysis"]["module"] = target_func_module
             self.config["analysis"]["version"] = self.config['analysis']['module'].__version__
+            log.info(f"Analyzer version {self.config['analysis']['version']}")
+            self.config["analysis"]["version"] = self.config["analysis"]["version"].replace('.', '_')
+            log.info(f"Versioning results as {self.config['analysis']['version']}")
         except ImportError as e:
             log.err(f"Could not import analysis_function module: {self.config['analysis']['module']}")
             log.err(e)
@@ -71,7 +74,7 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
     def claim_job(self):
         version = self.config["analysis"]["version"]
         r = requests.get(
-            self.config["api"]["baseuri"] + f"/jobs/frame/{version}/claim",
+            self.config["api"]["baseuri"] + f"/jobs/{version}/claim",
             auth=self.config["auth"]
         )
         if r.status_code == requests.codes.ok or r.status_code == requests.codes.created:
@@ -88,7 +91,7 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
             raise JobClaimFail(r)
         job = loads(r.text)
         self.checkin(
-            "claimed frame job",
+            "claimed job",
             {"job": {
                 "url": job["url"],
                 "version": version
@@ -129,11 +132,11 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
 
         funcname = self.config['analysis']['function'].__module__ + ":" + self.config['analysis']['function'].__name__
         log.debug(f"Using analysis_function: {funcname}")
-        frame_version = self.config["analysis"]["version"]
+        result_version = self.config["analysis"]["version"]
         self.checkin("analyze", {
             "job": {
                 "url": repo["url"],
-                "frame_version": frame_version,
+                "result_version": result_version,
                 "workdir": workdir,
                 "repodir": repodir,
                 "function": funcname
@@ -143,29 +146,26 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
         # run analysis_program for <repodir>
         try:
             result = self.config['analysis']['function'](repodir)
-            # TODO assert dataframe is intact
-        except AssertionError as e:
-            log.err("Result from analyzer malformed.")
-            raise e
+            # TODO assert result is valid
         except Exception as e:
             log.err("Unknown exception when calling the analysis_function!")
             raise e # will let the main loop report error to server
 
         # return result to server
-        endpoint = f"{self.config['api']['baseuri']}/jobs/frame/{frame_version}/complete/{escape_url(repo['url'])}"
-        log.debug(f"Result submission endpoint: {endpoint}")
-        # r = requests.put(
-        #     endpoint,
-        #     data=dumps(result),
-        #     auth=self.config["auth"],
-        #     headers={'Content-Type': 'application/json'}
-        # )
-        # TODO binary upload of dataframe (feather?) format
+        endpoint = f"{self.config['api']['baseuri']}/repo/{escape_url(repo['url'])}/result/{result_version}"
+        log.debug(f"Pushing result to endpoint: {endpoint}")
+        r = requests.put(
+            endpoint,
+            data=dumps(result),
+            auth=self.config["auth"],
+            headers={'Content-Type': 'application/json'}
+        )
         if not r.status_code == requests.codes.created: # note: is @property, not function
             log.err("Unknown error when submitting job result!")
             log.warn(r)
             log.debug(r.text)
-            raise ConnectionError("Failed to communicate result to server.")
+            raise ConnectionError("Failed to push result to server.")
+
 
         self.checkin("cleanup")
 
@@ -181,7 +181,7 @@ class CodeAnalyticsFrameWorker(CodeAnalyticsWorker):
             log.debug("job_loop")
 
             try:
-                repo = self.claim_frame_job(self.config["analysis"]["version"])
+                repo = self.claim_job(self.config["analysis"]["version"])
                 if repo is not None:
                     log.info(f"Claimed job: {repo['url']}, going to work...")
                     self.run_job(repo)
@@ -232,7 +232,7 @@ def __main__():
     if (args.verbose):
         log.setLevel(log.DEBUG)
 
-    worker = CodeAnalyticsFrameWorker(args.config)
+    worker = CodeAnalyticsJsonWorker(args.config)
     worker.start()
 
 if __name__ == "__main__":
