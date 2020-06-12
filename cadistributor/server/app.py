@@ -151,7 +151,7 @@ def put_repo(url):
     })
     return 'TODO', 501 # TODO not implemented
 
-@app.route('/repo/<url>/result/<version>', methods=['PUT', 'POST'])
+@app.route('/repo/<path:url>/result/<version>', methods=['PUT', 'POST'])
 @auth.login_required
 def put_repo_result(url, version):
     ensureVersionStringMongoSafe(version)
@@ -159,15 +159,16 @@ def put_repo_result(url, version):
     data = loads(request.data)
     if data is None:
         raise CodeAnalyticsError("No valid data supplied.", 400)
-    db.store_json_result(version, auth.username(), data)
-    return json_response("done", 204) # created
+    db.store_json_result(version, url, auth.username(), data)
+    return json_response("done", 201) # created
 
-@app.route('/repo/<url>/result/<version>', methods=['GET'])
+@app.route('/repo/<path:url>/result/<version>', methods=['GET'])
 @auth.login_required
-def get_repo_result(repo, version):
+def get_repo_result(url, version):
     ensureVersionStringMongoSafe(version)
     url = urllib.parse.unquote_plus(url)
-    return 'TODO', 501 # TODO not implemented
+    matches = db.find_results(version, url)
+    return json_response(matches, 200)
 
 ### /jobs/
 
@@ -179,7 +180,7 @@ def get_repo_result(repo, version):
 def claim_result_job(version):
     workername = auth.username()
     ensureVersionStringMongoSafe(version)
-    repo = db.claim_repo_job_by_frame_version(version, workername)
+    repo = db.claim_repo_job_by_result_version(version, workername)
     return json_response(repo, 201 if repo else 204, True) # created / no-content
 
 # route for completed job results

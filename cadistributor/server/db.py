@@ -80,7 +80,7 @@ def get_repo(url):
 
 def claim_repo_job_by_result_version(version, workerid):
     try:
-        log.info(f"Claiming a job v{version} for {workerid}...")
+        log.debug(f"Job claim attempt v{version} for {workerid}...")
         target = repocollection.find_one_and_update(
             {
                 f"result.{version}": {"$exists": False}
@@ -102,15 +102,28 @@ def claim_repo_job_by_result_version(version, workerid):
 
 # resultcollection
 
-def store_json_result(version, workerid, data):
+def store_json_result(version, repo_url, workerid, data):
     try:
         log.info(f"Storing result v{version} from {workerid} ...")
         r = resultcollection.insert_one({
             "version": version,
+            "repo": repo_url,
             "worker": workerid,
+            "servertime": datetime.datetime.utcnow(),
             "data": data
         })
         # TODO is there any way to check the insertion?
     except Exception as e:
         log.err("Failed to store result into db...")
         raise e
+
+def find_results(version, repo_url):
+    try:
+        r = resultcollection.find({
+            "version": version,
+            "repo": repo_url
+        })
+        return r
+    except Exception as e:
+        log.err("Failed searching for results in the db!")
+        log.err(str(e))

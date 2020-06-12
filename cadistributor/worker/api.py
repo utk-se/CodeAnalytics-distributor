@@ -1,4 +1,7 @@
 
+import datetime
+import requests
+from bson.json_util import loads, dumps
 from requests.auth import HTTPBasicAuth
 from .. import log
 
@@ -6,31 +9,32 @@ class CodeAnalyticsDistributorError(RuntimeError):
     pass
 
 class CodeAnalyticsWorker():
-    def ping_master():
+    def ping_master(self):
         r = requests.get(
-            this.config["api"]["baseuri"] + "/status"
+            self.config["api"]["baseuri"] + "/status",
+            auth=self.config["auth"],
         )
         log.debug(r)
         log.debug(r.content)
         assert r.ok
 
-    def get_worker_state():
+    def get_worker_state(self):
         r = requests.get(
-            this.config["api"]["baseuri"] + "/status/worker/" + this.config["api"]["workername"],
+            self.config["api"]["baseuri"] + "/status/worker/" + self.config["api"]["workername"],
         )
         if r.ok:
             return loads(r.text)
         elif r.status_code == requests.codes.unauthorized:
             raise ConnectionRefusedError("unauthorized")
         elif r.status_code == requests.codes.not_found:
-            raise RuntimeError(f"Worker status for \'{this.config['api']['workername']}\' not found on server!")
+            raise RuntimeError(f"Worker status for \'{self.config['api']['workername']}\' not found on server!")
         else:
             log.error(f"Unknown response: {r.status_code}")
             raise RuntimeError(f"Unknown response: {r.status_code}")
 
-    def checkin(status: str = "nothing", state: dict = {}):
+    def checkin(self, status: str = "nothing", state: dict = {}):
         now = datetime.datetime.utcnow()
-        data = get_worker_state() or {}
+        data = self.get_worker_state() or {}
         newdata={
             "status": status,
             "lastcheckin": now,
@@ -40,9 +44,9 @@ class CodeAnalyticsWorker():
         data.update(newdata)
         # log.debug(f"Putting data: {dumps(data)}")
         r = requests.put(
-            this.config["api"]["baseuri"] + "/status/worker/" + this.config["api"]["workername"],
+            self.config["api"]["baseuri"] + "/status/worker/" + self.config["api"]["workername"],
             data=dumps(data),
-            auth=this.config["auth"],
+            auth=self.config["auth"],
             headers={'Content-Type': 'application/json'}
         )
         if r.status_code == requests.codes.unauthorized:

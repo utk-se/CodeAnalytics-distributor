@@ -9,6 +9,9 @@ class CodeAnalyticsError(Exception):
             self.status_code = status_code
         self.payload = payload
 
+class JobClaimFail(CodeAnalyticsError):
+    pass
+
 def ensureVersionStringMongoSafe(str):
     if '.' in str:
         raise CodeAnalyticsError("Version ID/key string may not use the dot, please replace it!", 400)

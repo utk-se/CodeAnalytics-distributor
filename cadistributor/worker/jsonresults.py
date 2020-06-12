@@ -62,7 +62,7 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
             raise AssertionError(f"type({self.config['analysis']['function']}) is not {type(lambda x: x)}")
 
         log.info("Pinging API...")
-        ping_master()
+        self.ping_master()
 
         log.info("Worker: " + self.config["api"]["workername"])
 
@@ -181,10 +181,10 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
             log.debug("job_loop")
 
             try:
-                repo = self.claim_job(self.config["analysis"]["version"])
+                repo = self.claim_job()
                 if repo is not None:
                     log.info(f"Claimed job: {repo['url']}, going to work...")
-                    self.run_job(repo)
+                    self.execute_job(repo)
                 else:
                     self.checkin("sleeping")
                     time.sleep(5)
