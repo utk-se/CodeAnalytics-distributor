@@ -35,32 +35,11 @@ mappings = {
     "_files": "",
 
     "c_or_c++": "c,cpp",
-    # "total_c_or_c++_files": "c,cpp",
-    # "total_java_files": "java",
-    # "total_javascript_files": "javascript",
-    # "total_python_files": "python",
-    # "total_php_files": "php",
-    # "total_perl_files": "perl",
-    # "total_lua_files": "lua",
-    # "total_other_files": "other",
-    # "total_files": ""
 }
 
 status = {
     "n": 0
 }
-
-# def insert_translated_woc_item(srcitem):
-#
-# def translate_all_proj_metadata():
-#     n = 0
-#     source_items = proj_metadata_q1.find()
-#
-#     source_items.batch_size(4000)
-#     for srcitem in source_items:
-#         insert_translated_woc_item(srcitem)
-#
-#     log.info("Completed translate_all_proj_metadata")
 
 def insert_with_filetypes(repoitem):
     status["n"] = status["n"] + 1
@@ -100,7 +79,7 @@ def merge_repos_with_files():
     # cursor.batch_size(2000)
 
     for i in cursor:
-        log.debug(i)
+        # log.debug(i)
         insert_with_filetypes(i)
 
 if __name__ == "__main__":
