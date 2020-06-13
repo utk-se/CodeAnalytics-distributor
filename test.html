@@ -1,0 +1,63 @@
+<html>
+<body style="background-color: #111;">
+
+<pre><font color="#444444">───────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</font>
+       <font color="#444444">│ </font>File: <b>cadistributor/jobs.py</b>
+<font color="#444444">───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</font>
+<font color="#444444">   1</font>   <font color="#444444">│</font> 
+<font color="#444444">   2</font>   <font color="#444444">│</font> <font color="#F92672">from</font><font color="#F8F8F2"> </font><font color="#F92672">.</font><font color="#F8F8F2"> </font><font color="#F92672">import</font><font color="#F8F8F2"> log</font>
+<font color="#444444">   3</font>   <font color="#444444">│</font> <font color="#F92672">import</font><font color="#F8F8F2"> pymongo</font>
+<font color="#444444">   4</font>   <font color="#444444">│</font> <font color="#F92672">from</font><font color="#F8F8F2"> pymongo.mongo_client </font><font color="#F92672">import</font><font color="#F8F8F2"> MongoClient</font>
+<font color="#444444">   5</font>   <font color="#444444">│</font> <font color="#F92672">import</font><font color="#F8F8F2"> bson, json, datetime</font>
+<font color="#444444">   6</font>   <font color="#444444">│</font> <font color="#F92672">from</font><font color="#F8F8F2"> bson.objectid </font><font color="#F92672">import</font><font color="#F8F8F2"> ObjectId</font>
+<font color="#444444">   7</font>   <font color="#444444">│</font> <font color="#F92672">from</font><font color="#F8F8F2"> bson.json_util </font><font color="#F92672">import</font><font color="#F8F8F2"> loads, dumps</font>
+<font color="#444444">   8</font>   <font color="#444444">│</font> 
+<font color="#444444">   9</font>   <font color="#444444">│</font> 
+<font color="#444444">  10</font>   <font color="#444444">│</font> <font color="#F8F8F2">jobtemplate </font><font color="#F92672">=</font><font color="#F8F8F2"> {</font>
+<font color="#444444">  11</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;url&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font><font color="#F8F8F2">,</font>
+<font color="#444444">  12</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;name&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font><font color="#F8F8F2">,</font>
+<font color="#444444">  13</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;target_commit&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font><font color="#F8F8F2">,</font>
+<font color="#444444">  14</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;target_commit_date&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font><font color="#F8F8F2">,</font>
+<font color="#444444">  15</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;status&quot;</font><font color="#F8F8F2"> : </font><font color="#E6DB74">&quot;unclaimed&quot;</font><font color="#F8F8F2">,</font>
+<font color="#444444">  16</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;worker&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font><font color="#F8F8F2">,</font>
+<font color="#444444">  17</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#E6DB74">&quot;source&quot;</font><font color="#F8F8F2"> : </font><font color="#BE84FF">None</font>
+<font color="#444444">  18</font>   <font color="#444444">│</font> <font color="#F8F8F2">}</font>
+<font color="#444444">  19</font>   <font color="#444444">│</font> 
+<font color="#444444">  20</font>   <font color="#444444">│</font> <font color="#F8F8F2">dbclient </font><font color="#F92672">=</font><font color="#F8F8F2"> MongoClient()</font>
+<font color="#444444">  21</font>   <font color="#444444">│</font> <font color="#F8F8F2">db </font><font color="#F92672">=</font><font color="#F8F8F2"> dbclient.get_database(</font><font color="#FD971F">name</font><font color="#F92672">=</font><font color="#E6DB74">&apos;ca-core&apos;</font><font color="#F8F8F2">)</font>
+<font color="#444444">  22</font>   <font color="#444444">│</font> <font color="#F8F8F2">jobcollection </font><font color="#F92672">=</font><font color="#F8F8F2"> db.get_collection(</font><font color="#E6DB74">&apos;jobs&apos;</font><font color="#F8F8F2">)</font>
+<font color="#444444">  23</font>   <font color="#444444">│</font> <font color="#F8F8F2">workercollection </font><font color="#F92672">=</font><font color="#F8F8F2"> db.get_collection(</font><font color="#E6DB74">&apos;workers&apos;</font><font color="#F8F8F2">)</font>
+<font color="#444444">  24</font>   <font color="#444444">│</font> 
+<font color="#444444">  25</font>   <font color="#444444">│</font> <font color="#75715E">### workercollection</font>
+<font color="#444444">  26</font>   <font color="#444444">│</font> 
+<font color="#444444">  27</font>   <font color="#444444">│</font> <font color="#A6E22E">def</font><font color="#F8F8F2"> </font><font color="#A6E22E">get_worker_state</font><font color="#F8F8F2">(</font><font color="#FD971F">workername</font><font color="#F8F8F2">):</font>
+<font color="#444444">  28</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#F92672">try</font><font color="#F8F8F2">:</font>
+<font color="#444444">  29</font>   <font color="#444444">│</font> <font color="#F8F8F2">        result </font><font color="#F92672">=</font><font color="#F8F8F2"> workercollection.find_one({</font>
+<font color="#444444">  30</font>   <font color="#444444">│</font> <font color="#F8F8F2">            </font><font color="#E6DB74">&quot;name&quot;</font><font color="#F8F8F2">: workername</font>
+<font color="#444444">  31</font>   <font color="#444444">│</font> <font color="#F8F8F2">        })</font>
+<font color="#444444">  32</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">if</font><font color="#F8F8F2"> result </font><font color="#F92672">is</font><font color="#F8F8F2"> </font><font color="#BE84FF">None</font><font color="#F8F8F2">:</font>
+<font color="#444444">  33</font>   <font color="#444444">│</font> <font color="#F8F8F2">            </font><font color="#F92672">return</font><font color="#F8F8F2"> </font><font color="#BE84FF">404</font>
+<font color="#444444">  34</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">return</font><font color="#F8F8F2"> result[</font><font color="#E6DB74">&quot;state&quot;</font><font color="#F8F8F2">]</font>
+<font color="#444444">  35</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#F92672">except</font><font color="#F8F8F2"> </font><font color="#66D9EF">Exception</font><font color="#F8F8F2"> </font><font color="#F92672">as</font><font color="#F8F8F2"> e:</font>
+<font color="#444444">  36</font>   <font color="#444444">│</font> <font color="#F8F8F2">        log.err(e)</font>
+<font color="#444444">  37</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">raise</font><font color="#F8F8F2"> e</font>
+<font color="#444444">  38</font>   <font color="#444444">│</font> 
+<font color="#444444">  39</font>   <font color="#444444">│</font> <font color="#A6E22E">def</font><font color="#F8F8F2"> </font><font color="#A6E22E">get_worker_token</font><font color="#F8F8F2">(</font><font color="#FD971F">workername</font><font color="#F8F8F2">):</font>
+<font color="#444444">  40</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#F92672">try</font><font color="#F8F8F2">:</font>
+<font color="#444444">  41</font>   <font color="#444444">│</font> <font color="#F8F8F2">        result </font><font color="#F92672">=</font><font color="#F8F8F2"> workercollection.find_one({</font>
+<font color="#444444">  42</font>   <font color="#444444">│</font> <font color="#F8F8F2">            </font><font color="#E6DB74">&quot;name&quot;</font><font color="#F8F8F2">: workername</font>
+<font color="#444444">  43</font>   <font color="#444444">│</font> <font color="#F8F8F2">        })</font>
+<font color="#444444">  44</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">if</font><font color="#F8F8F2"> result </font><font color="#F92672">is</font><font color="#F8F8F2"> </font><font color="#BE84FF">None</font><font color="#F8F8F2">:</font>
+<font color="#444444">  45</font>   <font color="#444444">│</font> <font color="#F8F8F2">            </font><font color="#F92672">return</font><font color="#F8F8F2"> </font><font color="#BE84FF">None</font><font color="#F8F8F2"> </font><font color="#75715E"># unauthorized</font>
+<font color="#444444">  46</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">return</font><font color="#F8F8F2"> result[</font><font color="#E6DB74">&quot;token&quot;</font><font color="#F8F8F2">]</font>
+<font color="#444444">  47</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#F92672">except</font><font color="#F8F8F2"> </font><font color="#66D9EF">Exception</font><font color="#F8F8F2"> </font><font color="#F92672">as</font><font color="#F8F8F2"> e:</font>
+<font color="#444444">  48</font>   <font color="#444444">│</font> <font color="#F8F8F2">        log.err(e)</font>
+<font color="#444444">  49</font>   <font color="#444444">│</font> <font color="#F8F8F2">        </font><font color="#F92672">return</font><font color="#F8F8F2"> </font><font color="#BE84FF">None</font>
+<font color="#444444">  50</font>   <font color="#444444">│</font> 
+<font color="#444444">  51</font>   <font color="#444444">│</font> <font color="#A6E22E">def</font><font color="#F8F8F2"> </font><font color="#A6E22E">update_worker_state</font><font color="#F8F8F2">(</font><font color="#FD971F">workername</font><font color="#F8F8F2">, </font><font color="#FD971F">state</font><font color="#F8F8F2">):</font>
+<font color="#444444">  52</font>   <font color="#444444">│</font> <font color="#F8F8F2">    </font><font color="#F92672">try</font><font color="#F8F8F2">:</font>
+<font color="#444444">  53</font>   <font color="#444444">│</font> <font color="#F8F8F2">        worker </font><font color="#F92672">=</font><font color="#F8F8F2"> workercollection.find_one_and_update({</font>
+</pre>
+
+</body>
+</html>

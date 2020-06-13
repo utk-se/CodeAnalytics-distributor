@@ -99,6 +99,24 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
         )
         return job
 
+    def submit_result(self, repo, result):
+        result_version = self.config["analysis"]["version"]
+        # return result to server
+        endpoint = f"{self.config['api']['baseuri']}/repo/{escape_url(repo['url'])}/result/{result_version}"
+        log.debug(f"Pushing result to endpoint: {endpoint}")
+        r = requests.put(
+            endpoint,
+            data=dumps(result),
+            auth=self.config["auth"],
+            headers={'Content-Type': 'application/json'}
+        )
+        if not r.status_code == requests.codes.created: # note: is @property, not function
+            log.err("Unknown error when submitting job result!")
+            log.warn(r)
+            log.debug(r.text)
+            raise ConnectionError("Failed to push result to server.")
+
+
     def execute_job(self, repo):
         self.checkin("setup", {
             "job": {
@@ -125,10 +143,17 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
             }
         })
         log.info(f"Beginning clone for job {repo['url']}")
-        git.clone_repository(
-            repo["url"],
-            repodir
-        )
+        try:
+            git.clone_repository(
+                repo["url"],
+                repodir
+            )
+        except Exception as e:
+            self.submit_result(repo, {
+                "error": str(e),
+                "from": "git.clone_repository"
+            })
+            return
 
         funcname = self.config['analysis']['function'].__module__ + ":" + self.config['analysis']['function'].__name__
         log.debug(f"Using analysis_function: {funcname}")
@@ -151,21 +176,7 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
             log.err("Unknown exception when calling the analysis_function!")
             raise e # will let the main loop report error to server
 
-        # return result to server
-        endpoint = f"{self.config['api']['baseuri']}/repo/{escape_url(repo['url'])}/result/{result_version}"
-        log.debug(f"Pushing result to endpoint: {endpoint}")
-        r = requests.put(
-            endpoint,
-            data=dumps(result),
-            auth=self.config["auth"],
-            headers={'Content-Type': 'application/json'}
-        )
-        if not r.status_code == requests.codes.created: # note: is @property, not function
-            log.err("Unknown error when submitting job result!")
-            log.warn(r)
-            log.debug(r.text)
-            raise ConnectionError("Failed to push result to server.")
-
+        self.submit_result(repo, result)
 
         self.checkin("cleanup")
 
