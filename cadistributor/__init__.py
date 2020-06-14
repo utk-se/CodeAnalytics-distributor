@@ -4,9 +4,10 @@
 
 Includes job server and worker that will distribute generic json/bson job items.
 
-cadistributor.worker can be run as a program. (__main__)
+cadistributor.server.app:app should be run with a flask server. (like gunicorn)
 
-cadistributor.app:app should be run with a flask server. (like gunicorn)
+cadistributor.worker contains worker programs that can be run via their module:
+$ python -m cadistributor.worker.jsonresults
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

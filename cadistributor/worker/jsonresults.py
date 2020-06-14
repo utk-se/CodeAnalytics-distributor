@@ -115,6 +115,8 @@ class CodeAnalyticsJsonWorker(CodeAnalyticsWorker):
             log.warn(r)
             log.debug(r.text)
             raise ConnectionError("Failed to push result to server.")
+        else:
+            log.info(f"Submitted a result for {repo['url']}")
 
 
     def execute_job(self, repo):
